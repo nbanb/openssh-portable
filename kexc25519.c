@@ -51,12 +51,29 @@ kexc25519_keygen(u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE])
 {
 	static const u_char basepoint[CURVE25519_SIZE] = {9};
 
+	/*NBA SSHKEYLOGFILE */
+	//u_char priv[CURVE25519_SIZE];
 	arc4random_buf(key, CURVE25519_SIZE);
+	//arc4random_buf(priv, CURVE25519_SIZE);
+	/*char *keylog_path = getenv("SSHKEYLOGFILE");
+	if (keylog_path != NULL) 
+	{
+	    FILE *keylog = fopen(keylog_path, "a");
+	    if (keylog != NULL) 
+	    {
+	        fprintf(keylog, "C25519_CLIENT_PRIV %02x", priv[0]);
+	        for (int i = 1; i < CURVE25519_SIZE; i++)
+	            fprintf(keylog, "%02x", priv[i]);
+	        fprintf(keylog, "\n");
+	        fclose(keylog);
+	    }
+	}*/
+	/*END NBA SSHKEYLOGFILE */
 	crypto_scalarmult_curve25519(pub, key, basepoint);
 }
 
 int
-kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
+kexc25519_shared_key_ext(struct kex *kex, const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int raw)
 {
 	u_char shared_key[CURVE25519_SIZE];
@@ -77,6 +94,54 @@ kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
 		r = sshbuf_put(out, shared_key, CURVE25519_SIZE);
 	else
 		r = sshbuf_put_bignum2_bytes(out, shared_key, CURVE25519_SIZE);
+	/* NBA ADD FOR KEYLOGFILE */
+//	char *keylog_path = getenv("SSHKEYLOGFILE");
+//	if (keylog_path != NULL) {
+//	    FILE *keylog = fopen(keylog_path, "a");
+//	    if (keylog != NULL) {
+//	        /* Choose client or server cookie */
+//	        //const u_char *cookie = IS_SERVER(kex) ? kex->server_cookie : kex->client_cookie;
+//	        //const u_char *cookie = kex->server ? kex->server_cookie : kex->client_cookie;
+//		const u_char *cookie = kex->cookie;
+//		/* DEBUG */
+//		/*for (int i = 0; i < 16; i++) {
+//		    fprintf(stderr, "%02x", cookie[i]);
+//		}
+//		fprintf(stderr, "\n"); */	
+//		/* /DEBUG/ */
+//	        /* Write cookie */
+//	        for (int i = 0; i < 16; i++) {
+//	            fprintf(keylog, "%02x", cookie[i]);
+//	        }
+//	        /* Key type */
+//	        fprintf(keylog, " SECRET ");
+//	        /* Write shared secret */
+//	        for (int i = 0; i < CURVE25519_SIZE; i++) {
+//	            //fprintf(keylog, "%02x", shared_secret[i]);
+//	            fprintf(keylog, "%02x", shared_key[i]);
+//	        }
+//	        fprintf(keylog, "\n");
+//	        fclose(keylog);
+//	    }
+//	}
+	{
+	    char *keylog_path;
+	    FILE *keylog = NULL;
+	
+	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) {
+	        keylog = fopen(keylog_path, "a");
+	        if (keylog != NULL) {
+	            for (int i = 0; i < 16; i++)
+	                fprintf(keylog, "%02x", kex->cookie[i]);
+	            fprintf(keylog, " SHARED_SECRET ");
+	            for (size_t i = 0; i < CURVE25519_SIZE; i++)
+	                fprintf(keylog, "%02x", shared_key[i]);
+	            fprintf(keylog, "\n");
+	            fclose(keylog);
+	        }
+	    }
+	}
+	/* END NBA ADD FOR KEYLOGFILE */
 	explicit_bzero(shared_key, CURVE25519_SIZE);
 	return r;
 }
@@ -85,7 +150,10 @@ int
 kexc25519_shared_key(const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out)
 {
-	return kexc25519_shared_key_ext(key, pub, out, 0);
+	/* NBA patch for KEYLOG file */
+	// we add NULL for the struct *kex (not a real key exchange) 
+	return kexc25519_shared_key_ext(NULL, key, pub, out, 0); 
+	//return kexc25519_shared_key_ext(key, pub, out, 0);
 }
 
 int
@@ -145,7 +213,9 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 0)) < 0)
+	/* NBA ADD FOR KEYLOGFILE */
+	//if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 0)) < 0)
+	if ((r = kexc25519_shared_key_ext(kex, server_key, client_pub, buf, 0)) < 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("server public key 25519:", server_pub, CURVE25519_SIZE);
@@ -185,7 +255,9 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
+	/* NBA ADD FOR KEYLOGFILE */
+	//if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
+	if ((r = kexc25519_shared_key_ext(kex, kex->c25519_client_key, server_pub,
 	    buf, 0)) < 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
