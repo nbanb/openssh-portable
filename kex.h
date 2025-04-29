@@ -183,6 +183,10 @@ struct kex {
 	u_char sntrup761_client_key[crypto_kem_sntrup761_SECRETKEYBYTES]; /* KEM */
 	u_char mlkem768_client_key[crypto_kem_mlkem768_SECRETKEYBYTES]; /* KEM */
 	struct sshbuf *client_pub;
+	/* NBA added to store cookie for KEYLOG file */
+	u_char client_cookie[16];
+        u_char server_cookie[16];
+        u_char cookie[16];
 };
 
 int	 kex_name_valid(const char *);
@@ -271,7 +275,9 @@ int	kexc25519_shared_key(const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out)
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
-int	kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
+/* NBA change pour KELOGFILE */ 
+//int	kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
+int	kexc25519_shared_key_ext(struct kex *kex, const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int)
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));

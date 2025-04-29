@@ -594,7 +594,16 @@ kex_send_kexinit(struct ssh *ssh)
 		return SSH_ERR_INTERNAL_ERROR;
 	}
 	arc4random_buf(cookie, KEX_COOKIE_LEN);
-
+	/* NBA DEBUG */
+	/*for (int i = 0; i < 16; i++) 
+	{
+    		fprintf(stderr, "%02x", cookie[i]);
+	}
+	fprintf(stderr, "\n"); */
+	/* NBA ADD FOR KEYLOGFILE: save cookie in kex struct */
+	memcpy(kex->client_cookie, kex->my, 16);
+	memcpy(kex->cookie, cookie, 16);
+	/* END NBA ADD FOR KEYLOGFILE: save cookie in kex struct */
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEXINIT)) != 0 ||
 	    (r = sshpkt_putb(ssh, kex->my)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0) {
@@ -632,6 +641,10 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 			return r;
 		}
 	}
+        /* NBA ADD FOR KEYLOGFILE: save cookie in kex struct */
+        memcpy(kex->server_cookie, kex->peer, 16);
+        /* END NBA ADD FOR KEYLOGFILE: save cookie in kex struct */
+
 	for (i = 0; i < PROPOSAL_MAX; i++) {
 		if ((r = sshpkt_get_string(ssh, NULL, NULL)) != 0) {
 			error_fr(r, "discard proposal");

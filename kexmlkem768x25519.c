@@ -151,7 +151,9 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 		goto out;
 	/* append ECDH shared key */
 	client_pub += crypto_kem_mlkem768_PUBLICKEYBYTES;
-	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 1)) < 0)
+	/* NBA ADD for KEYLOGFILE */
+	//if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 1)) < 0)
+	if ((r = kexc25519_shared_key_ext(kex, server_key, client_pub, buf, 1)) < 0)
 		goto out;
 	if ((r = ssh_digest_buffer(kex->hash_alg, buf, hash, sizeof(hash))) != 0)
 		goto out;
@@ -229,12 +231,33 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	    &mlkem_ciphertext, mlkem_key);
 	if ((r = sshbuf_put(buf, mlkem_key, sizeof(mlkem_key))) != 0)
 		goto out;
-	if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
+	/* NBA ADD for KEYLOGFILE */
+	//if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
+	if ((r = kexc25519_shared_key_ext(kex, kex->c25519_client_key, server_pub,
 	    buf, 1)) < 0)
 		goto out;
 	if ((r = ssh_digest_buffer(kex->hash_alg, buf,
 	    hash, sizeof(hash))) != 0)
 		goto out;
+	/* NBA add EYLOGFILE support */
+	{
+	    char *keylog_path;
+	    FILE *keylog = NULL;
+	
+	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) {
+	        keylog = fopen(keylog_path, "a");
+	        if (keylog != NULL) {
+	            for (int i = 0; i < 16; i++)
+	                fprintf(keylog, "%02x", kex->cookie[i]);
+	            fprintf(keylog, " SHARED_SECRET ");
+	            for (size_t i = 0; i < ssh_digest_bytes(kex->hash_alg); i++)
+	                fprintf(keylog, "%02x", hash[i]);
+	            fprintf(keylog, "\n");
+	            fclose(keylog);
+	        }
+	    }
+	}
+	/* END NBA add EYLOGFILE support */
 #ifdef DEBUG_KEXECDH
 	dump_digest("client kem key:", mlkem_key, sizeof(mlkem_key));
 	dump_digest("concatenation of KEM key and ECDH shared key:",
