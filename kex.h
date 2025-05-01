@@ -184,9 +184,9 @@ struct kex {
 	u_char mlkem768_client_key[crypto_kem_mlkem768_SECRETKEYBYTES]; /* KEM */
 	struct sshbuf *client_pub;
 	/* NBA added to store cookie for KEYLOG file */
-	u_char client_cookie[16];
-        u_char server_cookie[16];
-        u_char cookie[16];
+	u_char client_cookie[16]; // optional to store client_cookie
+        u_char server_cookie[16]; // optional to store server_cookie
+        u_char cookie[16]; // used to store current cookie, ie: client_cookie here
 };
 
 int	 kex_name_valid(const char *);

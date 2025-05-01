@@ -128,9 +128,11 @@ kexc25519_shared_key_ext(struct kex *kex, const u_char key[CURVE25519_SIZE],
 	    char *keylog_path;
 	    FILE *keylog = NULL;
 	
-	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) {
+	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) 
+	    {
 	        keylog = fopen(keylog_path, "a");
-	        if (keylog != NULL) {
+	        if (keylog != NULL) 
+		{
 	            for (int i = 0; i < 16; i++)
 	                fprintf(keylog, "%02x", kex->cookie[i]);
 	            fprintf(keylog, " SHARED_SECRET ");
