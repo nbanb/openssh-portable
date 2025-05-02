@@ -51,24 +51,7 @@ kexc25519_keygen(u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE])
 {
 	static const u_char basepoint[CURVE25519_SIZE] = {9};
 
-	/*NBA SSHKEYLOGFILE */
-	//u_char priv[CURVE25519_SIZE];
 	arc4random_buf(key, CURVE25519_SIZE);
-	//arc4random_buf(priv, CURVE25519_SIZE);
-	/*char *keylog_path = getenv("SSHKEYLOGFILE");
-	if (keylog_path != NULL) 
-	{
-	    FILE *keylog = fopen(keylog_path, "a");
-	    if (keylog != NULL) 
-	    {
-	        fprintf(keylog, "C25519_CLIENT_PRIV %02x", priv[0]);
-	        for (int i = 1; i < CURVE25519_SIZE; i++)
-	            fprintf(keylog, "%02x", priv[i]);
-	        fprintf(keylog, "\n");
-	        fclose(keylog);
-	    }
-	}*/
-	/*END NBA SSHKEYLOGFILE */
 	crypto_scalarmult_curve25519(pub, key, basepoint);
 }
 
@@ -94,60 +77,12 @@ kexc25519_shared_key_ext(struct kex *kex, const u_char key[CURVE25519_SIZE],
 		r = sshbuf_put(out, shared_key, CURVE25519_SIZE);
 	else
 		r = sshbuf_put_bignum2_bytes(out, shared_key, CURVE25519_SIZE);
-	/* NBA ADD FOR KEYLOGFILE */
-//	char *keylog_path = getenv("SSHKEYLOGFILE");
-//	if (keylog_path != NULL) {
-//	    FILE *keylog = fopen(keylog_path, "a");
-//	    if (keylog != NULL) {
-//	        /* Choose client or server cookie */
-//	        //const u_char *cookie = IS_SERVER(kex) ? kex->server_cookie : kex->client_cookie;
-//	        //const u_char *cookie = kex->server ? kex->server_cookie : kex->client_cookie;
-//		const u_char *cookie = kex->cookie;
-//		/* DEBUG */
-//		/*for (int i = 0; i < 16; i++) {
-//		    fprintf(stderr, "%02x", cookie[i]);
-//		}
-//		fprintf(stderr, "\n"); */	
-//		/* /DEBUG/ */
-//	        /* Write cookie */
-//	        for (int i = 0; i < 16; i++) {
-//	            fprintf(keylog, "%02x", cookie[i]);
-//	        }
-//	        /* Key type */
-//	        fprintf(keylog, " SECRET ");
-//	        /* Write shared secret */
-//	        for (int i = 0; i < CURVE25519_SIZE; i++) {
-//	            //fprintf(keylog, "%02x", shared_secret[i]);
-//	            fprintf(keylog, "%02x", shared_key[i]);
-//	        }
-//	        fprintf(keylog, "\n");
-//	        fclose(keylog);
-//	    }
-//	}
-//	{
-//	    char *keylog_path;
-//	    FILE *keylog = NULL;
-//	
-//	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) 
-//	    {
-//	        keylog = fopen(keylog_path, "a");
-//	        if (keylog != NULL) 
-//		{
-//	            for (int i = 0; i < 16; i++)
-//	                fprintf(keylog, "%02x", kex->cookie[i]);
-//	            fprintf(keylog, " SHARED_SECRET ");
-//	            for (size_t i = 0; i < CURVE25519_SIZE; i++)
-//	                fprintf(keylog, "%02x", shared_key[i]);
-//	            fprintf(keylog, "\n");
-//	            fclose(keylog);
-//	        }
-//	    }
-//	}
-	/* END NBA ADD FOR KEYLOGFILE */
 	/* ___add logging shared_key to keylog file befre zeroing it */
-	sshlog_shared_secret(kex, shared_key, CURVE25519_SIZE);
-	sshlog_ext_shared_secret(kex, shared_key, CURVE25519_SIZE);
-
+	if (kex->kex_type != KEX_KEM_SNTRUP761X25519_SHA512 &&
+            kex->kex_type != KEX_KEM_MLKEM768X25519_SHA256)
+	{
+		sshlog_keylog_file(kex, shared_key, CURVE25519_SIZE);
+	}	
 	explicit_bzero(shared_key, CURVE25519_SIZE);
 	return r;
 }
@@ -156,10 +91,9 @@ int
 kexc25519_shared_key(const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out)
 {
-	/* NBA patch for KEYLOG file */
-	// we add NULL for the struct *kex (not a real key exchange) 
+	/* ___keylog file need to pass NULL for the struct *kex 
+	 * (not a real key exchange) */
 	return kexc25519_shared_key_ext(NULL, key, pub, out, 0); 
-	//return kexc25519_shared_key_ext(key, pub, out, 0);
 }
 
 int
@@ -219,8 +153,7 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	/* NBA ADD FOR KEYLOGFILE */
-	//if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 0)) < 0)
+	/* ___keylog file need to pass kex struct to kexc25519_shared_key_ext */
 	if ((r = kexc25519_shared_key_ext(kex, server_key, client_pub, buf, 0)) < 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
@@ -261,8 +194,7 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	/* NBA ADD FOR KEYLOGFILE */
-	//if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
+	/* ___keylog file need to pass kex struct to kexc25519_shared_key_ext */
 	if ((r = kexc25519_shared_key_ext(kex, kex->c25519_client_key, server_pub,
 	    buf, 0)) < 0)
 		goto out;

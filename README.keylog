@@ -1,6 +1,8 @@
 OpenSSH keylog file
 --------------------
 
+WARNING: Do not enable in production environments. This exposes session secrets.
+
 Since OpenSSH is using Diffie-Hellman methode to comunicate on public network
 it's necessry to log somewhere the session cookie and the computed shared_secret
 to be able to decrypt traffic
@@ -131,4 +133,47 @@ It can be easily tested sith a command like:
 
 
   
+Extended keylog file:
+---------------------
+
+For those who need more detailed informations, you can also set SSHEXTKEYLOGFILE 
+environment variable which produce a mode detailed file using format:
+
+<cookie> <optionnal 'REKEY' term> KEX_ALG <kex algo> SHARED_SECRET <shared_secret>
+
+For example:
+        cat ~/ssh_ext_keylog.log
+        4f1a61641d8864b1a941531f9638c68b KEX_ALG sntrup761x25519-sha512 SHARED_SECRET a6de23b55f6462494385e4f891035dee45ed1b7f4283e3929aa7bd362ecd295a
+        54b9ba5193a4a8f0d01cf095a2b20d3b REKEY KEX_ALG sntrup761x25519-sha512 SHARED_SECRET a17e5303f10e753b94527fe9463cc41d914be2a8339d65137afa86ad6c99ef65
+        8a3e42e48f007a22af4b929988048e43 REKEY KEX_ALG sntrup761x25519-sha512 SHARED_SECRET 59753eebb9db89657f5add6fdc063fedaab8fa33a330031b6f2adf76f97f6267
+
+
+How to use extended keylog file feature of OpenSSH ?
+-----------------------------------------------------
+
+Simply export to environment file path and file name in SSHEXTKEYLOGFILE variable 
+
+Example:
+        export SSHEXTKEYLOGFILE=~/ssh_ext_keylog.log 
+        ssh user@host 
+
+And during session, you can see the cookie, algo, rekey and the shared_secret logged to file
+~/ssh_ext_keylog.log
+
+
+DEBUG:
+------
+
+You can enable DEBUG_KEX_COOKIE to validate that the cookie stored in keylog file is OK
+
+To enable this debug flag, do:
+        ./configure CFLAGS="-DDEBUG_KEX_COOKIE"
+        make
+
+
+WARNING:
+--------
+
+Do not enable in production environments. This exposes session secrets.
+
 
