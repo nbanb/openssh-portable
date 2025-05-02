@@ -568,6 +568,65 @@ kex_input_newkeys(int type, u_int32_t seq, struct ssh *ssh)
 	return 0;
 }
 
+
+/* ___add helper for KEYLOG FILE */
+void
+sshlog_keylog_file(const struct kex *kex, const u_char *shared_key, size_t shared_key_len)
+{
+    char *keylog_path;
+    FILE *keylog = NULL;
+
+    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL)
+    {
+        keylog = fopen(keylog_path, "a");
+        if (keylog != NULL)
+        {
+            for (int i = 0; i < 16; i++)
+                fprintf(keylog, "%02x", kex->cookie[i]);
+            fprintf(keylog, " SHARED_SECRET ");
+            for (size_t i = 0; i < CURVE25519_SIZE; i++)
+                fprintf(keylog, "%02x", shared_key[i]);
+            fprintf(keylog, "\n");
+            fclose(keylog);
+        }
+    }
+}
+
+
+/* ___add helper for KEYLOG FILE extended version */
+void
+sshlog_ext_keylog_file(const struct kex *kex, const u_char *shared_key, size_t shared_key_len)
+{	
+    char *ext_keylog_path;
+    FILE *ext_keylog = NULL;
+
+    if ((ext_keylog_path = getenv("SSHEXTKEYLOGFILE")) != NULL) 
+    {
+        ext_keylog = fopen(ext_keylog_path, "a");
+        if (ext_keylog != NULL) 
+	{
+            // Write cookie
+            for (int i = 0; i < 16; i++)
+                fprintf(ext_keylog, "%02x", kex->cookie[i]);
+
+            // Add optional metadata
+            if (kex->done)
+                fprintf(ext_keylog, " REKEY");
+
+            if (kex->name)
+                fprintf(ext_keylog, " KEX_ALG %s", kex->name);
+
+            fprintf(ext_keylog, " SHARED_SECRET ");
+            for (size_t i = 0; i < shared_key_len; i++)
+                fprintf(ext_keylog, "%02x", shared_key[i]);
+
+            fprintf(ext_keylog, "\n");
+            fclose(ext_keylog);
+        }
+    }
+}
+
+
 int
 kex_send_kexinit(struct ssh *ssh)
 {

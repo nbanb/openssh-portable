@@ -124,26 +124,30 @@ kexc25519_shared_key_ext(struct kex *kex, const u_char key[CURVE25519_SIZE],
 //	        fclose(keylog);
 //	    }
 //	}
-	{
-	    char *keylog_path;
-	    FILE *keylog = NULL;
-	
-	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) 
-	    {
-	        keylog = fopen(keylog_path, "a");
-	        if (keylog != NULL) 
-		{
-	            for (int i = 0; i < 16; i++)
-	                fprintf(keylog, "%02x", kex->cookie[i]);
-	            fprintf(keylog, " SHARED_SECRET ");
-	            for (size_t i = 0; i < CURVE25519_SIZE; i++)
-	                fprintf(keylog, "%02x", shared_key[i]);
-	            fprintf(keylog, "\n");
-	            fclose(keylog);
-	        }
-	    }
-	}
+//	{
+//	    char *keylog_path;
+//	    FILE *keylog = NULL;
+//	
+//	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) 
+//	    {
+//	        keylog = fopen(keylog_path, "a");
+//	        if (keylog != NULL) 
+//		{
+//	            for (int i = 0; i < 16; i++)
+//	                fprintf(keylog, "%02x", kex->cookie[i]);
+//	            fprintf(keylog, " SHARED_SECRET ");
+//	            for (size_t i = 0; i < CURVE25519_SIZE; i++)
+//	                fprintf(keylog, "%02x", shared_key[i]);
+//	            fprintf(keylog, "\n");
+//	            fclose(keylog);
+//	        }
+//	    }
+//	}
 	/* END NBA ADD FOR KEYLOGFILE */
+	/* ___add logging shared_key to keylog file befre zeroing it */
+	sshlog_shared_secret(kex, shared_key, CURVE25519_SIZE);
+	sshlog_ext_shared_secret(kex, shared_key, CURVE25519_SIZE);
+
 	explicit_bzero(shared_key, CURVE25519_SIZE);
 	return r;
 }

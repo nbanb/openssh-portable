@@ -240,26 +240,31 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	    hash, sizeof(hash))) != 0)
 		goto out;
 	/* NBA add EYLOGFILE support */
-	{
-	    char *keylog_path;
-	    FILE *keylog = NULL;
-	
-	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) 
-	    {
-	        keylog = fopen(keylog_path, "a");
-	        if (keylog != NULL) 
-		{
-	            for (int i = 0; i < 16; i++)
-	                fprintf(keylog, "%02x", kex->cookie[i]);
-	            fprintf(keylog, " SHARED_SECRET ");
-	            for (size_t i = 0; i < ssh_digest_bytes(kex->hash_alg); i++)
-	                fprintf(keylog, "%02x", hash[i]);
-	            fprintf(keylog, "\n");
-	            fclose(keylog);
-	        }
-	    }
-	}
+//	{
+//	    char *keylog_path;
+//	    FILE *keylog = NULL;
+//	
+//	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) 
+//	    {
+//	        keylog = fopen(keylog_path, "a");
+//	        if (keylog != NULL) 
+//		{
+//	            for (int i = 0; i < 16; i++)
+//	                fprintf(keylog, "%02x", kex->cookie[i]);
+//	            fprintf(keylog, " SHARED_SECRET ");
+//	            for (size_t i = 0; i < ssh_digest_bytes(kex->hash_alg); i++)
+//	                fprintf(keylog, "%02x", hash[i]);
+//	            fprintf(keylog, "\n");
+//	            fclose(keylog);
+//	        }
+//	    }
+//	}
 	/* END NBA add EYLOGFILE support */
+
+	/* ___add logging shared_key to keylog file befre zeroing it */
+        sshlog_shared_secret(kex, shared_key, SSH_DIGEST_MAX_LENGTH);
+        sshlog_ext_shared_secret(kex, shared_key, SSH_DIGEST_MAX_LENGTH);
+
 #ifdef DEBUG_KEXECDH
 	dump_digest("client kem key:", mlkem_key, sizeof(mlkem_key));
 	dump_digest("concatenation of KEM key and ECDH shared key:",

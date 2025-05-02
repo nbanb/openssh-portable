@@ -274,13 +274,18 @@ void	kexc25519_keygen(u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE])
 int	kexc25519_shared_key(const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out)
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
-	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
-/* NBA change pour KELOGFILE */ 
+z	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
+/* ___change for KEYLOG FILE */ 
 //int	kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
 int	kexc25519_shared_key_ext(struct kex *kex, const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int)
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
+
+/* ___add for KEYLOG FILE helper in kex.c */ 
+void sshlog_keylog_file(const struct kex *kex, const u_char *shared_key, size_t shared_key_len);
+void sshlog_ext_keylog_file(const struct kex *kex, const u_char *shared_key, size_t shared_key_len);
+
 
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)
 void	dump_digest(const char *, const u_char *, int);

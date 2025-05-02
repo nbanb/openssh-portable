@@ -135,26 +135,31 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 	if ((r = ssh_digest_buffer(kex->hash_alg, buf, hash, sizeof(hash))) != 0)
 		goto out;
 	/* NBA adding KEYLOGFILE */
-	{
-	    char *keylog_path;
-	    FILE *keylog = NULL;
-	
-	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) 
-	    {
-	        keylog = fopen(keylog_path, "a");
-	        if (keylog != NULL) 
-		{
-	            for (int i = 0; i < 16; i++)
-	                fprintf(keylog, "%02x", kex->cookie[i]);
-	            fprintf(keylog, " SHARED_SECRET ");
-	            for (size_t i = 0; i < ssh_digest_bytes(kex->hash_alg); i++)
-	                fprintf(keylog, "%02x", hash[i]);
-	            fprintf(keylog, "\n");
-	            fclose(keylog);
-	        }
-	    }
-	}
+//	{
+//	    char *keylog_path;
+//	    FILE *keylog = NULL;
+//	
+//	    if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL) 
+//	    {
+//	        keylog = fopen(keylog_path, "a");
+//	        if (keylog != NULL) 
+//		{
+//	            for (int i = 0; i < 16; i++)
+//	                fprintf(keylog, "%02x", kex->cookie[i]);
+//	            fprintf(keylog, " SHARED_SECRET ");
+//	            for (size_t i = 0; i < ssh_digest_bytes(kex->hash_alg); i++)
+//	                fprintf(keylog, "%02x", hash[i]);
+//	            fprintf(keylog, "\n");
+//	            fclose(keylog);
+//	        }
+//	    }
+//	}
 	/* NBA adding KEYLOGFILE */
+
+	/* ___add logging shared_key to keylog file before zeroing it */
+        sshlog_shared_secret(kex, shared_key, SSH_DIGEST_MAX_LENGTH);
+        sshlog_ext_shared_secret(kex, shared_key, SSH_DIGEST_MAX_LENGTH);
+
 #ifdef DEBUG_KEXECDH
 	dump_digest("server public key 25519:", server_pub, CURVE25519_SIZE);
 	dump_digest("server cipher text:", ciphertext,
