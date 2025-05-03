@@ -170,6 +170,58 @@ To enable this debug flag, do:
         ./configure CFLAGS="-DDEBUG_KEX_COOKIE"
         make
 
+NOTES:
+------
+
+This feature log the shared_secret for algo:
+
+DH:
+- diffie-hellman-group1-sha1
+- diffie-hellman-group14-sha1
+- diffie-hellman-group14-sha256
+- diffie-hellman-group16-sha512
+- diffie-hellman-group18-sha512
+- diffie-hellman-group-exchange-sha1
+- diffie-hellman-group-exchange-sha256
+
+ECDH:
+- ecdh-sha2-nistp256
+- ecdh-sha2-nistp384
+- ecdh-sha2-nistp521
+
+ED25519 / KEMs
+- curve25519-sha256
+- sntrup761x25519-sha512
+- mlkem768x25519-sha256 
+
+It can be tested with command: (here algo is curve25519-sha256) 
+ssh -F none -o KexAlgorithms=curve25519-sha256 -o RekeyLimit=1K ${USER}@localhost ls / 2>&1 >/dev/null
+
+
+DEVELOPEMENT NOTES:
+-------------------
+
+To enable this feature, the following files where patched:
+
+kex.h: modifying 'kex' structure to store session cookie in kex structure
+       declaring helper action: sshlog_keylog_file
+
+kex.c: adding helper action: sshlog_keylog_file
+       copying the cookie to 'kex' structure
+
+kexc25519.c: modifying kexc25519_shared_key_ext to take 'kex' structure and to call sshlog_keylog_file
+             modifying all calls to kexc25519_shared_key_ext (adding 'kex' structure)
+             adding skip logging for hybrid KEMs like sntrup761x25519 and mlkem768x25519 
+             calling function sshlog_keylog_file in kexc25519_shared_key_ext for algo curve25519-sha256
+
+kexsntrup761x25519.c: calling function sshlog_keylog_file in kex_kem_sntrup761x25519_dec  
+
+kexmlkem768x25519.c : calling function sshlog_keylog_file in kex_kem_mlkem768x25519_dec
+
+kexdh.c: calling function sshlog_keylog_file in kex_dh_compute_key
+
+kexecdh.c: calling function sshlog_keylog_file in kex_ecdh_dec_key_group
+
 
 WARNING:
 --------
