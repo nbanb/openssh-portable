@@ -571,16 +571,19 @@ sshlog_keylog_file(const struct kex *kex, const u_char *shared_key, size_t share
     /* ___add logging cookie + shared_key to keylog file in Wireshark dissector format */
     char *keylog_path;
     FILE *keylog = NULL;
+    size_t i;
+    char *ext_keylog_path;
+    FILE *ext_keylog = NULL;
 
     if ((keylog_path = getenv("SSHKEYLOGFILE")) != NULL)
     {
         keylog = fopen(keylog_path, "a");
         if (keylog != NULL)
         {
-            for (int i = 0; i < 16; i++)
+            for (i = 0; i < 16; i++)
                 fprintf(keylog, "%02x", kex->cookie[i]);
             fprintf(keylog, " SHARED_SECRET ");
-            for (size_t i = 0; i < shared_key_len; i++)
+            for (i = 0; i < shared_key_len; i++)
                 fprintf(keylog, "%02x", shared_key[i]);
             fprintf(keylog, "\n");
             fclose(keylog);
@@ -588,8 +591,6 @@ sshlog_keylog_file(const struct kex *kex, const u_char *shared_key, size_t share
     }
 
     /* ___add extended logging to optionnal extended keylog file */
-    char *ext_keylog_path;
-    FILE *ext_keylog = NULL;
 
     if ((ext_keylog_path = getenv("SSHEXTKEYLOGFILE")) != NULL)
     {
@@ -597,7 +598,7 @@ sshlog_keylog_file(const struct kex *kex, const u_char *shared_key, size_t share
         if (ext_keylog != NULL)
 	{
             /* Write cookie */
-            for (int i = 0; i < 16; i++)
+            for (i = 0; i < 16; i++)
                 fprintf(ext_keylog, "%02x", kex->cookie[i]);
             /* Add optional metadata */
 	    if (!(kex->flags & KEX_INITIAL))
@@ -605,7 +606,7 @@ sshlog_keylog_file(const struct kex *kex, const u_char *shared_key, size_t share
             if (kex->name)
                 fprintf(ext_keylog, " KEX_ALG %s", kex->name);
             fprintf(ext_keylog, " SHARED_SECRET ");
-            for (size_t i = 0; i < shared_key_len; i++)
+            for (i = 0; i < shared_key_len; i++)
                 fprintf(ext_keylog, "%02x", shared_key[i]);
             fprintf(ext_keylog, "\n");
             fclose(ext_keylog);
@@ -619,6 +620,7 @@ kex_send_kexinit(struct ssh *ssh)
 	u_char *cookie;
 	struct kex *kex = ssh->kex;
 	int r;
+	int i;
 
 	if (kex == NULL) {
 		error_f("no kex");
@@ -641,7 +643,7 @@ kex_send_kexinit(struct ssh *ssh)
 	arc4random_buf(cookie, KEX_COOKIE_LEN);
 #ifdef DEBUG_KEX_COOKIE
 	/* ___output cookie on stderr to compare with cookie in keylog file */
-        for (int i = 0; i < 16; i++)
+        for (i = 0; i < 16; i++)
 	{
                 fprintf(stderr, "%02x", cookie[i]);
         }
