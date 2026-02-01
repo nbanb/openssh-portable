@@ -620,7 +620,9 @@ kex_send_kexinit(struct ssh *ssh)
 	u_char *cookie;
 	struct kex *kex = ssh->kex;
 	int r;
+#ifdef DEBUG_KEX_COOKIE
 	int i;
+#endif
 
 	if (kex == NULL) {
 		error_f("no kex");
